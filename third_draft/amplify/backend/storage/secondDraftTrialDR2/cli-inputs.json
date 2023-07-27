@@ -1,0 +1,14 @@
+{
+  "resourceName": "secondDraftTrialDR2",
+  "tableName": "secondDraftTrialDR2",
+  "partitionKey": {
+    "fieldName": "preparedBy",
+    "fieldType": "string"
+  },
+  "sortKey": {
+    "fieldName": "reportId",
+    "fieldType": "string"
+  },
+  "gsi": [],
+  "triggerFunctions": []
+}

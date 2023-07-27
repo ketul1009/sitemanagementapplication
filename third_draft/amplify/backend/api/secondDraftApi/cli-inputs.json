@@ -1,0 +1,12 @@
+{
+  "version": 1,
+  "paths": {
+    "/secondDraftApi": {
+      "name": "/secondDraftApi",
+      "lambdaFunction": "secondDraftLambda",
+      "permissions": {
+        "setting": "open"
+      }
+    }
+  }
+}

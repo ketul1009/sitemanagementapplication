@@ -1,0 +1,33 @@
+{
+  "dev": {
+    "awscloudformation": {
+      "AuthRoleName": "amplify-seconddraft-dev-140632-authRole",
+      "UnauthRoleArn": "arn:aws:iam::550466117139:role/amplify-seconddraft-dev-140632-unauthRole",
+      "AuthRoleArn": "arn:aws:iam::550466117139:role/amplify-seconddraft-dev-140632-authRole",
+      "Region": "ap-south-1",
+      "DeploymentBucketName": "amplify-seconddraft-dev-140632-deployment",
+      "UnauthRoleName": "amplify-seconddraft-dev-140632-unauthRole",
+      "StackName": "amplify-seconddraft-dev-140632",
+      "StackId": "arn:aws:cloudformation:ap-south-1:550466117139:stack/amplify-seconddraft-dev-140632/364619c0-208f-11ee-aae2-02de60f8b7d0",
+      "AmplifyAppId": "d2iqactuhz5js6"
+    },
+    "categories": {
+      "function": {
+        "secondDraftLambda": {
+          "deploymentBucketName": "amplify-seconddraft-dev-140632-deployment",
+          "s3Key": "amplify-builds/secondDraftLambda-55573150654a4c6e7a47-build.zip"
+        }
+      },
+      "storage": {
+        "secondDraftRecords": {},
+        "secondDraftTrialDR": {},
+        "secondDraftTrialDR2": {},
+        "secondDraftUsers": {},
+        "secondDraftGreenData": {}
+      },
+      "api": {
+        "secondDraftApi": {}
+      }
+    }
+  }
+}

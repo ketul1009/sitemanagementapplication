@@ -1,0 +1,14 @@
+{
+  "resourceName": "secondDraftRecords",
+  "tableName": "secondDraftRecords",
+  "partitionKey": {
+    "fieldName": "userId",
+    "fieldType": "string"
+  },
+  "sortKey": {
+    "fieldName": "recordId",
+    "fieldType": "string"
+  },
+  "gsi": [],
+  "triggerFunctions": []
+}

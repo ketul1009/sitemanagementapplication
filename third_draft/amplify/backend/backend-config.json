@@ -1,0 +1,79 @@
+{
+  "api": {
+    "secondDraftApi": {
+      "dependsOn": [
+        {
+          "attributes": [
+            "Name",
+            "Arn"
+          ],
+          "category": "function",
+          "resourceName": "secondDraftLambda"
+        }
+      ],
+      "providerPlugin": "awscloudformation",
+      "service": "API Gateway"
+    }
+  },
+  "function": {
+    "secondDraftLambda": {
+      "build": true,
+      "dependsOn": [
+        {
+          "attributeEnvMap": {
+            "Arn": "TABLE_ARN",
+            "Name": "TABLE_NAME"
+          },
+          "attributes": [
+            "Name",
+            "Arn"
+          ],
+          "category": "storage",
+          "resourceName": "secondDraftUsers"
+        }
+      ],
+      "providerPlugin": "awscloudformation",
+      "service": "Lambda"
+    }
+  },
+  "parameters": {
+    "AMPLIFY_function_secondDraftLambda_deploymentBucketName": {
+      "usedBy": [
+        {
+          "category": "function",
+          "resourceName": "secondDraftLambda"
+        }
+      ]
+    },
+    "AMPLIFY_function_secondDraftLambda_s3Key": {
+      "usedBy": [
+        {
+          "category": "function",
+          "resourceName": "secondDraftLambda"
+        }
+      ]
+    }
+  },
+  "storage": {
+    "secondDraftGreenData": {
+      "providerPlugin": "awscloudformation",
+      "service": "DynamoDB"
+    },
+    "secondDraftRecords": {
+      "providerPlugin": "awscloudformation",
+      "service": "DynamoDB"
+    },
+    "secondDraftTrialDR": {
+      "providerPlugin": "awscloudformation",
+      "service": "DynamoDB"
+    },
+    "secondDraftTrialDR2": {
+      "providerPlugin": "awscloudformation",
+      "service": "DynamoDB"
+    },
+    "secondDraftUsers": {
+      "providerPlugin": "awscloudformation",
+      "service": "DynamoDB"
+    }
+  }
+}
