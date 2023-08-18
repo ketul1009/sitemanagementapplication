@@ -1,9 +1,9 @@
-#Site Management Application
+# Site Management Application
 
 Created using Flutter, Node.js, AWS Lambda, AWS DynamoDB, AWS API Gateway.
 Add water-usage records, Add daily reports, Digitally Sign daily reports, Add green-data
 
-#Setup
+# Setup
 
 Run the following commands from your terminal:
 
