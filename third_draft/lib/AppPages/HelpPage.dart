@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:second_draft/AppPages/LoginPage.dart' as login;
 
+import '../Common/CustomDrawer.dart';
+
 class HelpPage extends StatelessWidget{
 
   final GlobalKey<ScaffoldState> _scaffoldKey = new GlobalKey<ScaffoldState>();
@@ -24,8 +26,8 @@ class HelpPage extends StatelessWidget{
           }
         },
         child: MaterialApp(
-      title: 'Help',
-      home: Scaffold(
+          title: 'Help',
+          home: Scaffold(
           key: _scaffoldKey,
           appBar: AppBar(
             leading: IconButton(
@@ -37,38 +39,7 @@ class HelpPage extends StatelessWidget{
             elevation: 2,
             backgroundColor: Colors.white,
           ),
-          drawer: Drawer(
-            // Add your menu items inside the Drawer
-            child: ListView(
-              children: [
-                Container(
-                  decoration: BoxDecoration(color: Colors.blue),
-                  child: Container(
-                    child: IconButton(
-                      icon: Icon(Icons.settings,),
-                      onPressed: (){
-
-                      },
-                    ),
-                  ),
-                  height: 100,
-                ),
-                ListTile(
-                  title: Text('Feature 1'),
-                  onTap: () {
-                    // Handle item 1 tap
-                  },
-                ),
-                ListTile(
-                  title: Text('Feature 2'),
-                  onTap: () {
-                    // Handle item 2 tap
-                  },
-                ),
-                // Add more items as needed
-              ],
-            ),
-          ),
+          drawer: const CustomDrawer(),
           body: Column(
             mainAxisAlignment: MainAxisAlignment.start,
             children: [

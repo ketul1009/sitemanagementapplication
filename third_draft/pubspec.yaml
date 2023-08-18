@@ -44,13 +44,18 @@ dependencies:
   cupertino_icons: ^1.0.2
   google_fonts: any
   go_router: any
-<<<<<<< HEAD
   internet_connection_checker: any
-  pdf: any
+  pdf: 3.10.0
   printing: any
   shared_preferences: any
-=======
->>>>>>> ff39c8d825dce60a1c07c4ffd6b906aa018a1f3a
+  excel: 2.1.0
+  syncfusion_flutter_xlsio: any
+  permission_handler: any
+  permission_handler_android: any
+  file_picker: any
+  dropdown_search: any
+  dropdown_button2: 2.1.0
+  csv: any
 
 dev_dependencies:
   flutter_test:
@@ -75,6 +80,7 @@ flutter:
   uses-material-design: true
   assets:
     - assets/images/
+    - assets/
   # To add assets to your application, add an assets section, like this:
   # assets:
   #   - images/a_dot_burr.jpeg

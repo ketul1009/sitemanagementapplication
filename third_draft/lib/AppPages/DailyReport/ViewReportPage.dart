@@ -2,14 +2,17 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:internet_connection_checker/internet_connection_checker.dart';
+import 'package:multiselect/multiselect.dart';
 import 'package:second_draft/AppPages/DailyReport/DailyReport.dart';
 import 'package:second_draft/AppPages/DailyReport/DetailedReport.dart';
 import 'package:second_draft/AppPages/HomePage.dart';
-import 'package:second_draft/Models/Report.dart';
+import 'package:second_draft/Common/CustomDrawer.dart';
+import 'package:second_draft/Models/DailyReport.dart';
 import 'package:http/http.dart' as http;
 import '../LoginPage.dart';
+import 'package:second_draft/main.dart';
 
-Report selectedReport = Report("", "", "", GeneralInfo('', '', '', '', ''), EnvironmentInfo('','','',''), ManpowerInfo('','','','','','',''), '');
+Report selectedReport = Report("", "", "", GeneralInfo('', '', '', '', '', ''), EnvironmentInfo('','','',''), ManpowerInfo('','','','','','',''), "");
 class ViewReportPage extends StatefulWidget{
   const ViewReportPage({super.key});
 
@@ -24,13 +27,21 @@ class ViewReportPageState extends State<ViewReportPage>{
   bool drawerOpen = false;
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   bool isLoading = false;
+  int serialNo = 1;
+  Set<String> business = {'All'};
+  Set<String> subBusiness = {'All'};
+  Set<String> location = {'All'};
+  List<String> selectedBusiness = [];
+  List<String> selectedSubBusiness = [];
+  List<String> selectedLocation = [];
 
   void _fetchReports() async {
     setState(() {
+      serialNo=1;
       isLoading = true;
     });
     final url = Uri.parse(
-        "https://gqori3shog.execute-api.ap-south-1.amazonaws.com/dev/secondDraftApi/siteincharge");
+        "https://gqori3shog.execute-api.ap-south-1.amazonaws.com/dev/secondDraftApi/dailyreport/siteincharge");
     List<Report> reportsTemp = [];
     try {
       final response = await http.post(
@@ -38,35 +49,34 @@ class ViewReportPageState extends State<ViewReportPage>{
           headers: <String, String>{'Content-Type': 'application/json'},
           body: json.encode({'preparedBy': user.userId})
       );
-      debugPrint(response.body);
       if(response.statusCode==200){
-        debugPrint("Inside if");
         final data = jsonDecode(response.body);
         for(var value in data['Items']){
-          GeneralInfo generalInfo = GeneralInfo(value['date'], value['company'], value['location'], value['contractor'], value['supervisor']);
-          debugPrint("General Info done");
+          business.add(value['business']);
+          subBusiness.add(value['subBusiness']);
+          location.add(value['location']);
+          var sign = value['signedBy'] ?? "";
+          GeneralInfo generalInfo = GeneralInfo(value['date'], value['business'], value['subBusiness'], value['location'], value['contractor'], value['supervisor']);
           EnvironmentInfo environmentInfo = EnvironmentInfo(value['weather'], value['temp'], value['wind'], value['humidity']);
-          debugPrint("Env Info done");
           ManpowerInfo manpowerInfo = ManpowerInfo(value['skilled'], value['semiSkilled'], value['unskilled'], value['supervisors'], value['irrigationTech'], value['horticulturist'], value['managers']);
-          debugPrint("Man Info done");
           reportsTemp.add(
-            Report(value['preparedBy'], value['name'], value['reportId'], generalInfo, environmentInfo, manpowerInfo, "Signed By")
+            Report(value['preparedBy'], value['name'], value['reportId'], generalInfo, environmentInfo, manpowerInfo, sign)
           );
-          debugPrint("Report added");
         }
+        reportsTemp.sort((a, b) {
+          return Comparable.compare(b.generalInfo.date, a.generalInfo.date);
+        });
         setState(() {
           reports=reportsTemp;
         });
       }
       else{
-        debugPrint("Inside Else");
         setState(() {
           serverResponse=response.body;
         });
       }
     }
     catch (e) {
-      debugPrint("Inside Catch: "+e.toString());
       setState(() {
         serverResponse=e.toString();
       });
@@ -78,10 +88,11 @@ class ViewReportPageState extends State<ViewReportPage>{
 
   void _fetchReportsAdmin() async {
     setState(() {
+      serialNo=1;
       isLoading = true;
     });
     final url = Uri.parse(
-        "https://gqori3shog.execute-api.ap-south-1.amazonaws.com/dev/secondDraftApi/admin");
+        "https://gqori3shog.execute-api.ap-south-1.amazonaws.com/dev/secondDraftApi/dailyreport/admin");
     List<Report> reportsTemp = [];
     try {
       final response = await http.post(
@@ -92,13 +103,73 @@ class ViewReportPageState extends State<ViewReportPage>{
       if(response.statusCode==200){
         final data = jsonDecode(response.body);
         for(var value in data['Items']){
-          GeneralInfo generalInfo = GeneralInfo(value['date'], value['company'], value['location'], value['contractor'], value['supervisor']);
+          var sign = value['signedBy'] ?? "";
+          business.add(value['business']);
+          subBusiness.add(value['subBusiness']);
+          location.add(value['location']);
+          GeneralInfo generalInfo = GeneralInfo(value['date'], value['business'], value['subBusiness'],value['location'], value['contractor'], value['supervisor']);
           EnvironmentInfo environmentInfo = EnvironmentInfo(value['weather'], value['temp'], value['wind'], value['humidity']);
-          ManpowerInfo manpowerInfo = ManpowerInfo(value['skilled'], value['semiSkilled'], value['unskilled'], value['supervisors'], value['irrigationTech'], value['horticulturist'], value['manager']);
+          ManpowerInfo manpowerInfo = ManpowerInfo(value['skilled'], value['semiSkilled'], value['unskilled'], value['supervisors'], value['irrigationTech'], value['horticulturist'], value['managers']);
           reportsTemp.add(
-              Report(value['preparedBy'], value['name'], value['reportId'], generalInfo, environmentInfo, manpowerInfo, "Signed By")
+              Report(value['preparedBy'], value['name'], value['reportId'], generalInfo, environmentInfo, manpowerInfo, sign)
           );
         }
+        reportsTemp.sort((a, b) {
+          return Comparable.compare(b.generalInfo.date, a.generalInfo.date);
+        });
+        setState(() {
+          reports=reportsTemp;
+        });
+      }
+      else{
+        setState(() {
+          serverResponse=response.body;
+        });
+      }
+    }
+    catch (e) {
+      setState(() {
+        serverResponse=e.toString();
+      });
+    }
+    setState(() {
+      isLoading=false;
+    });
+  }
+
+  void _fetchReportsSupervisor() async {
+    setState(() {
+      serialNo=1;
+      isLoading = true;
+    });
+    final url = Uri.parse(
+        "https://gqori3shog.execute-api.ap-south-1.amazonaws.com/dev/secondDraftApi/dailyreport/admin");
+    List<Report> reportsTemp = [];
+    try {
+      final response = await http.post(
+          url,
+          headers: <String, String>{'Content-Type': 'application/json'},
+          body: json.encode({'preparedBy': user.userId})
+      );
+      if(response.statusCode==200){
+        final data = jsonDecode(response.body);
+        for(var value in data['Items']){
+          var sign = value['signedBy'] ?? "";
+          business.add(value['business']);
+          subBusiness.add(value['subBusiness']);
+          location.add(value['location']);
+          if(value['supervisor']==user.userId || value['preparedBy']==user.userId){
+            GeneralInfo generalInfo = GeneralInfo(value['date'], value['business'], value['subBusiness'],value['location'], value['contractor'], value['supervisor']);
+            EnvironmentInfo environmentInfo = EnvironmentInfo(value['weather'], value['temp'], value['wind'], value['humidity']);
+            ManpowerInfo manpowerInfo = ManpowerInfo(value['skilled'], value['semiSkilled'], value['unskilled'], value['supervisors'], value['irrigationTech'], value['horticulturist'], value['managers']);
+            reportsTemp.add(
+                Report(value['preparedBy'], value['name'], value['reportId'], generalInfo, environmentInfo, manpowerInfo, sign)
+            );
+          }
+        }
+        reportsTemp.sort((a, b) {
+          return Comparable.compare(b.generalInfo.date, a.generalInfo.date);
+        });
         setState(() {
           reports=reportsTemp;
         });
@@ -130,10 +201,25 @@ class ViewReportPageState extends State<ViewReportPage>{
       if(user.role=="admin"){
         _fetchReportsAdmin();
       }
+      else if(user.role=="supervisor"){
+        _fetchReportsSupervisor();
+      }
       else{
         _fetchReports();
       }
     }
+  }
+
+  List<Report> filterData(List<String> selectedBusiness, List<String> selectedSubBusiness, List<String> selectedLocation) {
+    setState(() {
+      serialNo=1;
+    });
+    return reports.where((data) {
+      final businessMatch = selectedBusiness.contains(data.generalInfo.business) || selectedBusiness.contains("All");
+      final subBusinessMatch = selectedSubBusiness.contains(data.generalInfo.subBusiness) || selectedSubBusiness.contains("All");
+      final locationMatch = selectedLocation.contains(data.generalInfo.location) || selectedLocation.contains("All");
+      return businessMatch && subBusinessMatch && locationMatch;
+    }).toList();
   }
 
   @override
@@ -163,7 +249,7 @@ class ViewReportPageState extends State<ViewReportPage>{
         resizeToAvoidBottomInset: true,
         appBar: AppBar(
           leading: IconButton(
-            icon: Icon(Icons.menu, size: 50, color: Colors.black),
+            icon: const Icon(Icons.menu, size: 50, color: Colors.black),
             onPressed: () {
               setState(() {
                 drawerOpen=true;
@@ -194,38 +280,96 @@ class ViewReportPageState extends State<ViewReportPage>{
         ),
         drawer: Drawer(
           // Add your menu items inside the Drawer
-          child: ListView(
+          width: 400,
+          child: Column(
             children: [
               Container(
-                  decoration: const BoxDecoration(color: Colors.blue),
-                  height: 100,
-                  child: Column(
-                    children: [
-                      Container(
-                          alignment: Alignment.topRight,
-                          padding: EdgeInsets.all(10),
-                          child: Icon(Icons.settings)
-                      ),
-                      Container(
-                          padding: EdgeInsets.all(10),
-                          child: Text("Welcome "+user.name+", "+user.email)
-                      ),
-                    ],
-                  )
+                height: 120,
+                width: double.infinity,
+                color: Colors.blue,
+                alignment: Alignment.bottomCenter,
+                padding: const EdgeInsets.all(20),
+                child: const Text("Welcome", style: TextStyle(fontSize: 20),),
               ),
-              ListTile(
-                title: Text('Feature 1'),
-                onTap: () {
-                  // Handle item 1 tap
-                },
+              Container(
+                alignment: Alignment.center,
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  children: [
+                    const Text('Select Business', style: TextStyle(fontSize: 15, color: Colors.black),),
+                    Container(height: 10,),
+                    DropDownMultiSelect(
+                        options: business.toList(),
+                        selectedValues: selectedBusiness,
+                        onChanged: (value){
+                          setState(() {
+                            if(value.contains('All')){
+                              selectedBusiness=business.toList();
+                            }
+                            selectedBusiness = value;
+                          });
+                        }
+                    )
+                  ],
+                ),
               ),
-              ListTile(
-                title: Text('Feature 2'),
-                onTap: () {
-                  // Handle item 2 tap
-                },
+              Container(
+                alignment: Alignment.center,
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  children: [
+                    const Text('Select Sub-Business', style: TextStyle(fontSize: 15, color: Colors.black),),
+                    Container(height: 10,),
+                    DropDownMultiSelect(
+                        options: subBusiness.toList(),
+                        selectedValues: selectedSubBusiness,
+                        onChanged: (value){
+                          setState(() {
+                            if(value.contains('All')){
+                              selectedSubBusiness=subBusiness.toList();
+                            }
+                            selectedSubBusiness = value;
+                          });
+                        }
+                    )
+                  ],
+                ),
               ),
-              // Add more items as needed
+              Container(
+                alignment: Alignment.center,
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  children: [
+                    const Text('Select Location', style: TextStyle(fontSize: 15, color: Colors.black),),
+                    Container(height: 10,),
+                    DropDownMultiSelect(
+                        options: location.toList(),
+                        selectedValues: selectedLocation,
+                        onChanged: (value){
+                          setState(() {
+                            if(value.contains('All')){
+                              selectedLocation=location.toList();
+                            }
+                            selectedLocation = value;
+                          });
+                        }
+                    )
+                  ],
+                ),
+              ),
+              Container(
+                alignment: Alignment.center,
+                padding: const EdgeInsets.all(20),
+                child: ElevatedButton(
+                  child: const Text("Submit"),
+                  onPressed: (){
+                    setState(() {
+                      reports=filterData(selectedBusiness, selectedSubBusiness, selectedLocation);
+                    });
+                    _scaffoldKey.currentState?.closeDrawer();
+                  },
+                ),
+              )
             ],
           ),
         ),
@@ -264,21 +408,26 @@ class ViewReportPageState extends State<ViewReportPage>{
                 child: DataTable(
                   showCheckboxColumn: false,
                   columns: const [
-                    DataColumn(label: Text("Date")),
-                    DataColumn(label: Text("Prepared By")),
-                    DataColumn(label: Text("Supervisor"))
+                    DataColumn(label: Text("Sr. No", style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold))),
+                    DataColumn(label: Text("Date", style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold))),
+                    DataColumn(label: Text("Prepared By", style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold))),
+                    DataColumn(label: Text("Supervisor", style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)))
                   ],
                   rows: reports.map(
                           (reportRow) => DataRow(
                           onSelectChanged: (selected){
                             selectedReport=reportRow;
-                            debugPrint(selectedReport.name);
                             Navigator.push(
                                 context,
                                 MaterialPageRoute(builder: (context)=>const DetailedReportPage())
                             );
                           },
                           cells: [
+                            DataCell(
+                              Text((serialNo++).toString()),
+                              showEditIcon: false,
+                              placeholder: false,
+                            ),
                             DataCell(
                               Text(reportRow.generalInfo.date),
                               showEditIcon: false,

@@ -1,14 +1,15 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:flutter/widgets.dart';
 import 'package:internet_connection_checker/internet_connection_checker.dart';
 import 'package:printing/printing.dart';
-import 'package:random_string/random_string.dart';
 import 'package:second_draft/AppPages/DailyReport/ViewReportPage.dart';
 import 'package:second_draft/AppPages/HomePage.dart';
+import '../../Common/CustomDrawer.dart';
 import '../../Common/PdfMaker.dart';
-import '../../Models/Report.dart';
+import '../../Models/DailyReport.dart';
 import 'package:http/http.dart' as http;
+import 'package:second_draft/AppPages/LoginPage.dart';
+import 'package:second_draft/main.dart';
 
 class PdfPreviewPage extends StatefulWidget {
   final Report report;
@@ -23,15 +24,29 @@ class PdfPreviewPageState extends State<PdfPreviewPage> {
   Report report;
   String response="";
   bool error=false;
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
+  bool drawerOpen = false;
 
   PdfPreviewPageState(this.report);
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      key: _scaffoldKey,
       appBar: AppBar(
-        title: Text('PDF Preview'),
+        leading: IconButton(
+          icon: const Icon(Icons.menu, size: 50, color: Colors.black),
+          onPressed: () {
+            setState(() {
+              drawerOpen=true;
+            });
+            _scaffoldKey.currentState?.openDrawer();
+          },
+        ),
+        elevation: 2,
+        backgroundColor: Colors.white,
       ),
+      drawer: const CustomDrawer(),
       persistentFooterButtons: [
         Column(
           children: [
@@ -60,7 +75,7 @@ class PdfPreviewPageState extends State<PdfPreviewPage> {
                                     onPressed: (){
                                       Navigator.push(
                                           context,
-                                          MaterialPageRoute(builder: (context)=> HomePage())
+                                          MaterialPageRoute(builder: (context)=> const HomePage())
                                       );
                                     },
                                     child: const Text("Go to home")),
@@ -76,7 +91,7 @@ class PdfPreviewPageState extends State<PdfPreviewPage> {
               ],
             ),
             if(error)
-              Text(response, style: TextStyle(color: Colors.red),)
+              Text(response, style: const TextStyle(color: Colors.red),)
           ],
         )
       ],
@@ -103,7 +118,6 @@ class PdfPreviewPageState extends State<PdfPreviewPage> {
   }
 
   void _submitReport() async {
-    String recordId = randomAlphaNumeric(6);
     final url = Uri.parse("https://gqori3shog.execute-api.ap-south-1.amazonaws.com/dev/secondDraftApi/submit/dailyreport");
     try{
       var res = await http.post(url,
@@ -113,7 +127,8 @@ class PdfPreviewPageState extends State<PdfPreviewPage> {
           'name': report.name,
           'reportId': report.reportId,
           'date': report.generalInfo.date,
-          'company': report.generalInfo.company,
+          'business': report.generalInfo.business,
+          'subBusiness': report.generalInfo.subBusiness,
           'location': report.generalInfo.location,
           'contractor': report.generalInfo.contractor,
           'weather': report.environmentInfo.weather,

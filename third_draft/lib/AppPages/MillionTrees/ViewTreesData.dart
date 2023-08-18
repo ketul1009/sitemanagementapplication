@@ -3,9 +3,13 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
+import 'package:second_draft/AppPages/MillionTrees/TreeMission.dart';
 import 'package:second_draft/AppPages/MillionTrees/TreesReportSubmissionPage.dart';
+import 'package:second_draft/Common/CustomDrawer.dart';
+import '../../Common/ExcelMaker.dart';
 import '../../Models/TreePlantationReport.dart';
 import '../LoginPage.dart';
+import 'package:second_draft/main.dart';
 
 class ViewTreesDataPage extends StatefulWidget{
   ViewTreesDataPage({super.key});
@@ -15,11 +19,13 @@ class ViewTreesDataPage extends StatefulWidget{
 }
 
 class ViewTreesDataPageState extends State<ViewTreesDataPage>{
+  //remove all the comments here
   bool isLoading = false;
   List<TreePlantationReport> _records = [];
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   bool drawerOpen = false;
   DataTableSource _data = RecordData([]);
+  int serialNo = 1;
 
   Future<void> fetchDocuments() async {
     setState(() {
@@ -37,19 +43,24 @@ class ViewTreesDataPageState extends State<ViewTreesDataPage>{
         final data = jsonDecode(response.body);
         for (var value in data['Items']){
           var temp = value;
-          debugPrint(temp.toString());
           documents.add(
               TreePlantationReport(
-                temp['company'],
-                temp['time'],
-                temp['month'],
-                temp['year'],
-                temp['trees'],
-                temp['comments']
+                temp["preparedBy"],
+                temp["reportId"],
+                temp["time"],
+                temp["business"],
+                temp["subBusiness"],
+                temp["location"],
+                temp["month"],
+                temp["year"],
+                temp["treeNumber"],
+                temp["comments"]
               )
           );
         }
-
+        documents.sort((a, b) {
+          return Comparable.compare(b.time, a.time);
+        });
         setState(() {
           _records=documents;
         });
@@ -63,6 +74,85 @@ class ViewTreesDataPageState extends State<ViewTreesDataPage>{
       isLoading=false;
       _data=RecordData(_records);
     });
+  }
+
+  Future<void> fetchDocumentsAdmin() async {
+    setState(() {
+      isLoading=true;
+    });
+    final url = Uri.parse("https://gqori3shog.execute-api.ap-south-1.amazonaws.com/dev/secondDraftApi/plantationreport/admin");
+    try {
+      List<TreePlantationReport> documents = [];
+      final response = await http.post(
+          url,
+          headers: <String, String>{'Content-Type': 'application/json'},
+          body: json.encode({'preparedBy':user.userId})
+      );
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        debugPrint(data.toString());
+        for (var value in data['Items']){
+          var temp = value;
+          documents.add(
+              TreePlantationReport(
+                  temp["preparedBy"],
+                  temp["reportId"],
+                  temp["time"],
+                  temp["business"],
+                  temp["subBusiness"],
+                  temp["location"],
+                  temp["month"],
+                  temp["year"],
+                  temp["treeNumber"],
+                  temp["comments"]
+              )
+          );
+        }
+        documents.sort((a, b) {
+          return Comparable.compare(b.time, a.time);
+        });
+        setState(() {
+          _records=documents;
+        });
+      }
+      else {
+      }
+    } catch (e) {
+      debugPrint(e.toString());
+    }
+    setState(() {
+      isLoading=false;
+      _data=RecordData(_records);
+    });
+  }
+
+  List<List<dynamic>> _createList(List<TreePlantationReport> input) {
+    final List<List<dynamic>> data = [
+      [
+        'Business',
+        'Sub-Business',
+        'Location',
+        'Month',
+        'Year'
+        'Trees',
+        'Comments'
+      ]
+    ];
+
+    for(var temp in input){
+      List<String> row = [
+        temp.business,
+        temp.subBusiness,
+        temp.location,
+        temp.month,
+        temp.year,
+        temp.treeNumber,
+        temp.comments
+      ];
+      data.add(row);
+    }
+
+    return data;
   }
 
   @override
@@ -83,9 +173,16 @@ class ViewTreesDataPageState extends State<ViewTreesDataPage>{
         SystemUiOverlay.bottom,
       ],
     );
-    fetchDocuments();
+
+    if(user.role=="admin"){
+      fetchDocumentsAdmin();
+    }
+    else{
+      fetchDocuments();
+    }
   }
 
+  @override
   Widget build(BuildContext context){
     return WillPopScope(
       onWillPop: () async {
@@ -106,7 +203,7 @@ class ViewTreesDataPageState extends State<ViewTreesDataPage>{
         key: _scaffoldKey,
         appBar: AppBar(
           leading: IconButton(
-            icon: const Icon(Icons.menu, size: 30, color: Colors.black),
+            icon: const Icon(Icons.menu, size: 50, color: Colors.black),
             onPressed: () {
               setState(() {
                 drawerOpen=true;
@@ -123,11 +220,23 @@ class ViewTreesDataPageState extends State<ViewTreesDataPage>{
                       value: 0,
                       child: Text("Refresh"),
                     ),
+                    const PopupMenuItem<int>(
+                      value: 1,
+                      child: Text("Export to Excel"),
+                    ),
                   ];
                 },
                 onSelected:(value) {
                   if (value == 0) {
-                    fetchDocuments();
+                    if(user.role=="admin"){
+                      fetchDocumentsAdmin();
+                    }
+                    else{
+                      fetchDocuments();
+                    }
+                  }
+                  else if(value == 1){
+                    exportExcel(context, _createList(_records));
                   }
                 }
             ),
@@ -135,21 +244,7 @@ class ViewTreesDataPageState extends State<ViewTreesDataPage>{
           elevation: 2,
           backgroundColor: Colors.white,
         ),
-        drawer: Drawer(
-          // Add your menu items inside the Drawer
-          child: Column(
-            children: [
-              Container(
-                height: 120,
-                width: double.infinity,
-                color: Colors.blue,
-                alignment: Alignment.bottomCenter,
-                padding: const EdgeInsets.all(20),
-                child: const Text("Welcome", style: TextStyle(fontSize: 20),),
-              ),
-            ],
-          ),
-        ),
+        drawer: const CustomDrawer(),
         body: SingleChildScrollView(
             child: Column(
                 mainAxisAlignment: MainAxisAlignment.start,
@@ -159,7 +254,7 @@ class ViewTreesDataPageState extends State<ViewTreesDataPage>{
                     onPressed: (){
                       Navigator.push(
                           context,
-                          MaterialPageRoute(builder: (context) => TreeReportSubmissionPage())
+                          MaterialPageRoute(builder: (context) => const TreeMission())
                       );
                     },
                     style: const ButtonStyle(),
@@ -183,22 +278,31 @@ class ViewTreesDataPageState extends State<ViewTreesDataPage>{
                   PaginatedDataTable(
                     columns: const [
                       DataColumn(
-                        label: Text('Company'),
+                        label: Text('Sr. No', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
                       ),
                       DataColumn(
-                        label: Text('Date'),
+                        label: Text('Date', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
                       ),
                       DataColumn(
-                        label: Text('Year'),
+                        label: Text('Business', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
                       ),
                       DataColumn(
-                        label: Text('Month'),
+                        label: Text('Sub-Business', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
                       ),
                       DataColumn(
-                        label: Text('Trees'),
+                        label: Text('Location', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
                       ),
                       DataColumn(
-                        label: Text('Comments'),
+                        label: Text('Year', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
+                      ),
+                      DataColumn(
+                        label: Text('Month', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
+                      ),
+                      DataColumn(
+                        label: Text('Trees', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
+                      ),
+                      DataColumn(
+                        label: Text('Comments', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
                       ),
                     ],
                     source: _data,
@@ -212,14 +316,18 @@ class ViewTreesDataPageState extends State<ViewTreesDataPage>{
 }
 
 class RecordData extends DataTableSource{
+  int serialNo=1;
 
   List<Map<String, dynamic>> _data = List.generate(
       1,
           (index) => {
+        "Sr. No": "Sr. No",
         "Date": "Date",
-        "Company": "Company",
-        "Year": "Year",
+        "Business": "Business",
+        "Sub-Business": "Sub-Business",
+        "Location": "Location",
         "Month": "Month",
+        "Year": "Year",
         "Trees":"Trees",
         "Comments": "Comments",
       });
@@ -228,12 +336,15 @@ class RecordData extends DataTableSource{
     _data = List.generate(
         temp.length,
             (index) => {
-              "Date" : temp[index].time,
-              "Company" :temp[index].company,
-              "Year" : temp[index].year,
+              "Sr. No": (serialNo++).toString(),
+              "Date": temp[index].time.substring(0, 11),
+              "Business": temp[index].business,
+              "Sub-Business": temp[index].subBusiness,
+              "Location": temp[index].location,
               "Month": temp[index].month,
+              "Year": temp[index].year,
               "Trees": temp[index].treeNumber,
-              "Comments": temp[index].comments
+              "Comments": temp[index].comments,
         });
   }
 
@@ -246,10 +357,13 @@ class RecordData extends DataTableSource{
   @override
   DataRow getRow(int index) {
     return DataRow(cells: [
+      DataCell(Text(_data[index]["Sr. No"])),
       DataCell(Text(_data[index]["Date"])),
-      DataCell(Text(_data[index]["Company"])),
-      DataCell(Text(_data[index]["Year"])),
+      DataCell(Text(_data[index]["Business"])),
+      DataCell(Text(_data[index]["Sub-Business"])),
+      DataCell(Text(_data[index]["Location"])),
       DataCell(Text(_data[index]["Month"])),
+      DataCell(Text(_data[index]["Year"])),
       DataCell(Text(_data[index]["Trees"])),
       DataCell(Text(_data[index]["Comments"])),
     ]);

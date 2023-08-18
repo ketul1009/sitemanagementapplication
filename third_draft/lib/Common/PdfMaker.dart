@@ -1,9 +1,8 @@
 //import 'dart:html';
 import 'package:flutter/services.dart';
 import 'package:pdf/pdf.dart';
-import 'dart:typed_data';
 //import 'package:printing/printing.dart';
-import 'package:second_draft/Models/Report.dart';
+import 'package:second_draft/Models/DailyReport.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:pdf/widgets.dart';
 
@@ -21,8 +20,8 @@ Future<Uint8List> makePdf(Report report) async {
               children: [
                 pw.Column(
                   children: [
-                    pw.Text("Horticulture Division", style: pw.TextStyle(fontSize: 30)),
-                    pw.Text("Daily Maintenance Log Book", style: pw.TextStyle(fontSize: 20)),
+                    pw.Text("Horticulture Division", style: const pw.TextStyle(fontSize: 30)),
+                    pw.Text("Daily Maintenance Log Book", style: const pw.TextStyle(fontSize: 20)),
                   ],
                   crossAxisAlignment: pw.CrossAxisAlignment.start,
                 ),
@@ -38,10 +37,22 @@ Future<Uint8List> makePdf(Report report) async {
             pw.Container(height: 20),
             buildEnvironmentInfo(report.environmentInfo),
             pw.Container(height: 20),
+            pw.Divider(
+              height: 1,
+              borderStyle: pw.BorderStyle.dashed,
+            ),
+            pw.Text(
+              "Manpower Information",
+              style: pw.Theme.of(context).header3,
+            ),
             buildManpowerInfo(report.manpowerInfo),
             pw.Container(height: 20),
             pw.Text(
               "Prepared By: ${report.name}",
+              style: pw.Theme.of(context).header2,
+            ),
+            pw.Text(
+              "Signed By: ${report.signedBy}",
               style: pw.Theme.of(context).header2,
             ),
             pw.Divider(
@@ -69,8 +80,14 @@ pw.Widget buildGeneralInfo(GeneralInfo generalInfo) {
       ),
       TableRow(
         children: [
-          PaddedText('Company', align: TextAlign.center),
-          PaddedText(generalInfo.company, align: TextAlign.center),
+          PaddedText('Business', align: TextAlign.center),
+          PaddedText(generalInfo.business, align: TextAlign.center),
+        ],
+      ),
+      TableRow(
+        children: [
+          PaddedText('Sub-Business', align: TextAlign.center),
+          PaddedText(generalInfo.subBusiness, align: TextAlign.center),
         ],
       ),
       TableRow(
@@ -186,7 +203,7 @@ class PaddedText extends pw.StatelessWidget {
   @override
   pw.Widget build(Context context) {
     return pw.Padding(
-      padding: pw.EdgeInsets.all(2),
+      padding: const pw.EdgeInsets.all(2),
       child: pw.Text(
         text,
         textAlign: align,

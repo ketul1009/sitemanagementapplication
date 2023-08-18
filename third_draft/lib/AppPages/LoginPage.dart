@@ -9,8 +9,8 @@ import 'dart:convert';
 import 'package:second_draft/Models/User.dart';
 import 'package:second_draft/Components/GradientButton.dart';
 import 'package:riverpod/riverpod.dart' as rp;
-
-User user = User("userId", "password", "email", "name", "role");
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:second_draft/main.dart';
 
 class FormApp extends StatefulWidget{
   const FormApp({super.key});
@@ -125,31 +125,32 @@ class _FormAppState extends State<FormApp> {
                         ),
                       ),
                       Container(height: 10,),
-                      Container(child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: <Widget>[
-                          if(isLoading)
-                            const CircularProgressIndicator(),
-                          Container(height: 10,),
-                          MyElevatedButton(
-                            onPressed: () async {
-                              clientTime=DateTime.now();
-                              if(userId.isNotEmpty && password.isNotEmpty){
-                                user.userId=userId;
-                                _login(context);
-                              }
-                              else{
-                                setState(() {
-                                  serverResponse = "Please enter UserID and Password";
-                                });
-                              }
-                            },
-                            gradient: const LinearGradient(colors: [Colors.blue, Colors.pink]),
-                            borderRadius: BorderRadius.circular(20),
-                            width: 100,
-                            child: const Text('Login', style: TextStyle(fontSize: 20, color: Colors.white70),),
-                          )
-                        ],
+                      Container(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: <Widget>[
+                            if(isLoading)
+                              const CircularProgressIndicator(),
+                            Container(height: 10,),
+                            MyElevatedButton(
+                              onPressed: () async {
+                                clientTime=DateTime.now();
+                                if(userId.isNotEmpty && password.isNotEmpty){
+                                  user.userId=userId;
+                                  _login(context);
+                                }
+                                else{
+                                  setState(() {
+                                    serverResponse = "Please enter UserID and Password";
+                                  });
+                                }
+                              },
+                              gradient: const LinearGradient(colors: [Colors.blue, Colors.pink]),
+                              borderRadius: BorderRadius.circular(20),
+                              width: 100,
+                              child: const Text('Login', style: TextStyle(fontSize: 20, color: Colors.white70),),
+                            )
+                          ],
                       ),
                       ),
                       Container(height: 30,),
@@ -185,6 +186,12 @@ class _FormAppState extends State<FormApp> {
       var response = jsonDecode(res.body);
       debugPrint(res.body);
       if (res.body!="false"){
+        SharedPreferences pref =await SharedPreferences.getInstance();
+        pref.setString("userId", response['userId']);
+        pref.setString("name", response['name']);
+        pref.setString("email", response['email']);
+        pref.setString("role", response['role']);
+        pref.setBool("session", true);
         user.userId=response['userId'];
         user.name=response['name'];
         user.email=response['email'];

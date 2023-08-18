@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:second_draft/AppPages/DailyReport/ManpowerPage.dart';
-import 'package:second_draft/Models/Report.dart';
+import 'package:second_draft/Models/DailyReport.dart';
+
+import 'DailyReportBusiness.dart';
 
 class EnvironmentPage extends StatefulWidget{
 
@@ -37,17 +39,18 @@ class EnvironmentPageState extends State<EnvironmentPage>{
   String temp = "";
   String response="";
 
+
   @override
   Widget build(BuildContext context) {
     ReportProvider reportProvider = context.watch<ReportProvider>();
     Report report = reportProvider.report;
     return WillPopScope(
       onWillPop: () async {
-        Navigator.pop(context);
+        Navigator.push(context, MaterialPageRoute(builder: (context) => const DailyReportBusiness()));
         return true;
       },
       child: Scaffold(
-          appBar: AppBar(title: const Text('Env'),),
+          appBar: AppBar(),
           body: SingleChildScrollView(
             child: Column(
               children: [

@@ -1,59 +1,69 @@
 import 'dart:convert';
+
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:random_string/random_string.dart';
+import 'package:second_draft/Common/DateAndTimePicker.dart';
 import 'package:http/http.dart' as http;
-import 'package:second_draft/main.dart';
 import '../../Common/CustomDrawer.dart';
-import '../../Models/TreePlantationReport.dart';
-import '../LoginPage.dart';
+import '../../Models/WaterUsageRecord.dart';
+import '../../main.dart';
 
-class TreeReportSubmissionPage extends StatefulWidget{
-  TreeReportSubmissionPage({super.key});
+class WaterUsageSubmissionPage extends StatefulWidget{
 
+  const WaterUsageSubmissionPage({super.key});
   @override
-  State<TreeReportSubmissionPage> createState() => TreeReportSubmissionPageState();
+  State<WaterUsageSubmissionPage> createState() => _WaterUsageSubmissionPageState();
+
 }
 
-class TreeReportSubmissionPageState extends State<TreeReportSubmissionPage>{
-
-  List<String> months = [
-    'Month',
-    'January',
-    'February',
-    'March',
-    'April',
-    'May',
-    'June',
-    'July',
-    'August',
-    'September',
-    'October',
-    'November',
-    'December'
+class _WaterUsageSubmissionPageState extends State<WaterUsageSubmissionPage>{
+  List<String> weather = [
+    'Sunny',
+    'Rainy',
+    'Overcast',
   ];
-  List<String> years = [
-    'Year',
-    '2023',
-    '2022',
-    '2021',
-    '2020',
-    '2019'
+  List<String> area = [
+    'Indoor',
+    'Outdoor',
   ];
-  String selectedMonth="Month";
-  String selectedYear="Year";
-  String number="";
-  String comments="";
+  String selectedArea = 'Outdoor';
+  String selectedWeather = 'Sunny';
+  String waterUsage = '';
+  String date="";
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   bool drawerOpen = false;
   bool error=false;
+  bool isLoading = false;
 
   @override
-  Widget build(BuildContext context) {
-    TreeReportProvider treeReportProvider = context.watch<TreeReportProvider>();
-    TreePlantationReport treePlantationReport = treeReportProvider.treePlantationReport;
+  void initState() {
+    super.initState();
+
+    // Set the system overlay style
+    SystemChrome.setSystemUIOverlayStyle(
+      const SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent, // Make the status bar transparent
+        statusBarIconBrightness: Brightness.dark, // Dark status bar icons
+      ),
+    );
+
+    // Enable fullscreen mode
+    SystemChrome.setEnabledSystemUIMode(
+      SystemUiMode.manual,
+      overlays: [
+        SystemUiOverlay.top,
+        SystemUiOverlay.bottom,
+      ],
+    );
+  }
+
+  @override
+  Widget build(BuildContext context){
+    WaterRecordProvider waterRecordProvider = context.watch<WaterRecordProvider>();
+    WaterUsageRecord waterUsageRecord = waterRecordProvider.greenDataRecord;
     return WillPopScope(
       onWillPop: () async {
         if(!drawerOpen) {
@@ -88,16 +98,22 @@ class TreeReportSubmissionPageState extends State<TreeReportSubmissionPage>{
         body: SingleChildScrollView(
             child: Column(
               children: [
-                Container(height: 40,),
-                const Text('Select Year', style: TextStyle(fontSize: 20, color: Colors.black),),
+                DateAndTimePicker(
+                  title: "Select Date",
+                  onDataSubmission: (String temp){
+                      setState(() {
+                        date=temp;
+                      });
+                    }),
+                const Text('Select Area', style: TextStyle(fontSize: 20, color: Colors.black),),
                 Container(height: 10,),
                 DropdownButton(
                   // Initial Value
-                  value: selectedYear,
+                  value: selectedArea,
                   // Down Arrow Icon
                   icon: const Icon(Icons.keyboard_arrow_down),
                   // Array list of items
-                  items: years.map((String items) {
+                  items: area.map((String items) {
                     return DropdownMenuItem(
                       value: items,
                       child: Text(items),
@@ -107,34 +123,35 @@ class TreeReportSubmissionPageState extends State<TreeReportSubmissionPage>{
                   // change button value to selected value
                   onChanged: (String? newValue) {
                     setState(() {
-                      selectedYear = newValue!;
-                    });
-                  },
-                ),
-                const Text('Select Month', style: TextStyle(fontSize: 20, color: Colors.black),),
-                Container(height: 10,),
-                DropdownButton(
-                  // Initial Value
-                  value: selectedMonth,
-                  // Down Arrow Icon
-                  icon: const Icon(Icons.keyboard_arrow_down),
-                  // Array list of items
-                  items: months.map((String items) {
-                    return DropdownMenuItem(
-                      value: items,
-                      child: Text(items),
-                    );
-                  }).toList(),
-                  // After selecting the desired option,it will
-                  // change button value to selected value
-                  onChanged: (String? newValue) {
-                    setState(() {
-                      selectedMonth = newValue!;
+                      selectedArea = newValue!;
                     });
                   },
                 ),
                 Container(height: 30,),
-                const Text('Enter number of Trees', style: TextStyle(fontSize: 20, color: Colors.black),),
+                const Text('Select Weather', style: TextStyle(fontSize: 20, color: Colors.black),),
+                Container(height: 10,),
+                DropdownButton(
+                  // Initial Value
+                  value: selectedWeather,
+                  // Down Arrow Icon
+                  icon: const Icon(Icons.keyboard_arrow_down),
+                  // Array list of items
+                  items: weather.map((String items) {
+                    return DropdownMenuItem(
+                      value: items,
+                      child: Text(items),
+                    );
+                  }).toList(),
+                  // After selecting the desired option,it will
+                  // change button value to selected value
+                  onChanged: (String? newValue) {
+                    setState(() {
+                      selectedWeather = newValue!;
+                    });
+                  },
+                ),
+                Container(height: 30,),
+                const Text('Enter Water Usage (KL)', style: TextStyle(fontSize: 20, color: Colors.black),),
                 SizedBox( width: 150, child: TextField(
                   maxLength: 10,
                   cursorHeight: 30,
@@ -146,43 +163,19 @@ class TreeReportSubmissionPageState extends State<TreeReportSubmissionPage>{
                   keyboardType: TextInputType.number,
                   onChanged: (String newValue){
                     setState(() {
-                      number = newValue;
+                      waterUsage = newValue;
                     });
                   },
                 ),
                 ),
                 Container(height: 20,),
-                Container(
-                  decoration: BoxDecoration(
-                    border: Border.all(
-                      color: Colors.grey, // Border color
-                      width: 1.0, // Border width
-                    ),
-                    borderRadius: BorderRadius.circular(10.0), // Border radius
-                  ),
-                  width: 300,
-                  height: 100,
-                  child: TextField(
-                    onChanged: (newValue){
-                      setState(() {
-                        number=newValue;
-                      });
-                    },
-                    decoration: const InputDecoration(
-                      hintText: 'Comments',
-                      contentPadding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
-                      border: InputBorder.none, // Hide the default border of TextField
-                    ),
-                  ),
-                ),
-                Container(height: 20,),
                 ElevatedButton(
                   onPressed: (){
-                    if(selectedMonth=="Month" || selectedYear=="Year" || number.isEmpty){
+                    if(waterUsage.isEmpty){
                       showDialog(context: context, builder: (BuildContext context){
                         return AlertDialog(
-                          title: const Text('Invalid input'),
-                          content: const Text('Please enter valid Input'),
+                          title: const Text('Invalid value'),
+                          content: const Text('Water usage cannot be empty'),
                           actions: <Widget>[
                             IconButton(onPressed: (){
                               Navigator.of(context).pop(false);
@@ -192,11 +185,7 @@ class TreeReportSubmissionPageState extends State<TreeReportSubmissionPage>{
                       });
                     }
                     else{
-                      String formattedDateTime = DateTime.now().toString();
-                      _submitData(treePlantationReport.business,
-                          treePlantationReport.subBusiness,
-                          treePlantationReport.location,
-                          selectedMonth, selectedYear, number, comments);
+                      _submitData(user.userId, waterUsageRecord.business, waterUsageRecord.subBusiness, waterUsageRecord.location, date, selectedArea, selectedWeather, waterUsage);
                       if(!error){
                         showDialog(context: context, builder: (BuildContext context){
                           return AlertDialog(
@@ -235,29 +224,28 @@ class TreeReportSubmissionPageState extends State<TreeReportSubmissionPage>{
     );
   }
 
-  _submitData(String business, String subBusiness, String location, String month, String year, String treeNumber, String comments) async {
+  _submitData(String userId, String business, String subBusiness, String location, String date, String area, String weather, String waterUsage) async {
     setState(() {
-      error=false;
+      isLoading = true;
     });
     String recordId = randomAlphaNumeric(6);
-    final url = Uri.parse("https://gqori3shog.execute-api.ap-south-1.amazonaws.com/dev/secondDraftApi/submit/plantationreport");
+    final url = Uri.parse("https://gqori3shog.execute-api.ap-south-1.amazonaws.com/dev/secondDraftApi/submit");
     try{
       var res = await http.post(url,
         headers: <String, String>{'Content-Type': 'application/json'},
-        body: json.encode({
-          'reportId':recordId ,
-          'preparedBy': user.userId,
-          'time':DateTime.now().toString(),
-          'business': business,
-          'subBusiness': subBusiness,
-          'location': location,
-          'month': month,
-          'year': year,
-          'treeNumber': treeNumber,
-          'comments': comments
-          }),
+        body: json.encode(
+            {'userId': user.userId,
+              'recordId':recordId,
+              'time' : DateTime.now().toString(),
+              'business': business,
+              'subBusiness':subBusiness,
+              'location':location,
+              'date':date,
+              'area': area,
+              'weather': weather,
+              'waterUsage': waterUsage
+            }),
       );
-      debugPrint(res.body);
       if(res.statusCode!=200){
         setState(() {
           error=true;
@@ -270,5 +258,4 @@ class TreeReportSubmissionPageState extends State<TreeReportSubmissionPage>{
       });
     }
   }
-
 }

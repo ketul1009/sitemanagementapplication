@@ -16,12 +16,13 @@ class Report{
 class GeneralInfo{
 
   String date;
-  String company;
+  String business;
+  String subBusiness;
   String location;
   String contractor;
   String supervisor;
 
-  GeneralInfo(this.date, this.company, this.location, this.contractor, this.supervisor);
+  GeneralInfo(this.date, this.business, this.subBusiness, this.location, this.contractor, this.supervisor);
 }
 
 class EnvironmentInfo{

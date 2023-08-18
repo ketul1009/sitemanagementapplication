@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:second_draft/AppPages/DailyReport/PDFViewer.dart';
-import 'package:second_draft/Models/Report.dart';
+import 'package:second_draft/Models/DailyReport.dart';
 
 
 class ManpowerPage extends StatefulWidget{
@@ -27,7 +27,7 @@ class ManpowerPageState extends State<ManpowerPage>{
     ReportProvider reportProvider = context.watch<ReportProvider>();
     Report report = reportProvider.report;
     return Scaffold(
-      appBar: AppBar(title: const Text('Manpower'),),
+      appBar: AppBar(),
       body: SingleChildScrollView(
         child: Column(
           children: [

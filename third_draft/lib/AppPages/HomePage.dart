@@ -9,18 +9,21 @@ import 'package:second_draft/AppPages/HelpPage.dart';
 import 'package:flutter/services.dart';
 import 'package:second_draft/AppPages/LoginPage.dart';
 import 'package:second_draft/Common/Button.dart';
-import 'package:second_draft/Models/Report.dart';
+import 'package:second_draft/Models/DailyReport.dart';
+import '../Common/CustomDrawer.dart';
 import '../Components/GradientButton.dart';
-import 'Water Usage/SubmissionPage.dart';
+import 'Water Usage/WaterUsage.dart';
+import 'Water Usage/WaterUsageGeneralPage.dart';
+import 'package:second_draft/main.dart';
 
 class HomePage extends StatefulWidget{
   const HomePage({super.key});
 
   @override
-  State<HomePage> createState() => _HomePage();
+  State<HomePage> createState() => HomePageState();
 }
 
-class _HomePage extends State<HomePage>{
+class HomePageState extends State<HomePage>{
 
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   bool drawerOpen = false;
@@ -50,7 +53,7 @@ class _HomePage extends State<HomePage>{
   @override
   Widget build(BuildContext context){
     return ChangeNotifierProvider(
-        create: (context) => ReportProvider(Report("", "", "", GeneralInfo('', '', '', '', ''), EnvironmentInfo('','','',''), ManpowerInfo('','','','','','',''), '')),
+        create: (context) => ReportProvider(Report("", "", "", GeneralInfo('', '', '', '', '', ''), EnvironmentInfo('','','',''), ManpowerInfo('','','','','','',''), '')),
         child: WillPopScope(
           onWillPop: () async {
             if(!drawerOpen) {
@@ -101,43 +104,7 @@ class _HomePage extends State<HomePage>{
                 elevation: 2,
                 backgroundColor: Colors.white,
               ),
-              drawer: Drawer(
-                // Add your menu items inside the Drawer
-                child: ListView(
-                  children: [
-                    Container(
-                      decoration: const BoxDecoration(color: Colors.blue),
-                      height: 100,
-                      child: Column(
-                        children: [
-                          Container(
-                            alignment: Alignment.topRight,
-                            padding: const EdgeInsets.all(10),
-                            child: const Icon(Icons.settings)
-                          ),
-                          Container(
-                            padding: const EdgeInsets.all(10),
-                            child: Text("Welcome "+user.name+", "+user.email)
-                          ),
-                        ],
-                      )
-                    ),
-                    ListTile(
-                      title: const Text('Feature 1'),
-                      onTap: () {
-                        // Handle item 1 tap
-                      },
-                    ),
-                    ListTile(
-                      title: const Text('Feature 2'),
-                      onTap: () {
-                        // Handle item 2 tap
-                      },
-                    ),
-                    // Add more items as needed
-                  ],
-                ),
-              ),
+              drawer: const CustomDrawer(),
               body: SingleChildScrollView(
                   child: Container(
                       color: Colors.white54,
@@ -150,60 +117,6 @@ class _HomePage extends State<HomePage>{
                               child: Column(
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   children: <Widget>[
-                                    Column(
-                                      mainAxisAlignment: MainAxisAlignment.center,
-                                      children: <Widget>[
-                                        SizedBox(width: 350, height: 50, child: Row(
-                                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                                          children: <Widget>[
-                                            MyElevatedButton(
-                                                onPressed: (){
-                                                  Navigator.push(
-                                                      context, MaterialPageRoute(builder: (context) => const SubmissionPage())
-                                                  );
-                                                },
-                                                gradient: const LinearGradient(colors: [Colors.blue, Colors.pink]),
-                                                borderRadius: BorderRadius.circular(20),
-                                                width: 150,
-                                                child: SizedBox(
-                                                  width: 150,
-                                                  child: Center(
-                                                      child: Column(
-                                                        mainAxisAlignment: MainAxisAlignment.center,
-                                                        children: const [
-                                                          Text("New Water", style: TextStyle(fontSize: 16, color: Colors.white),),
-                                                          Text("Usage Record", style: TextStyle(fontSize: 15, color: Colors.white),),
-                                                        ],
-                                                      )
-                                                  ),
-                                                )
-                                            ),
-                                            MyElevatedButton(
-                                                onPressed: (){
-                                                  Navigator.push(
-                                                      context, MaterialPageRoute(builder: (context) => const DailyReport())
-                                                  );
-                                                },
-                                                gradient: const LinearGradient(colors: [Colors.blue, Colors.pink]),
-                                                borderRadius: BorderRadius.circular(20),
-                                                width: 150,
-                                                child: SizedBox(
-                                                  width: 150,
-                                                  child: Center(
-                                                    child: Column(
-                                                      mainAxisAlignment: MainAxisAlignment.center,
-                                                      children: const [
-                                                        Text("New Daily", style: TextStyle(fontSize: 16, color: Colors.white),),
-                                                        Text("Report ", style: TextStyle(fontSize: 15, color: Colors.white),),
-                                                      ],
-                                                    )
-                                                  ),
-                                                )
-                                            )
-                                          ],
-                                        ),)
-                                      ],
-                                    ),
                                     Container(height: 30,),
                                     Column(
                                       mainAxisAlignment: MainAxisAlignment.center,
@@ -284,7 +197,7 @@ class _HomePage extends State<HomePage>{
                                                         mainAxisAlignment: MainAxisAlignment.center,
                                                         children: const [
                                                           Text("100 Million", style: TextStyle(fontSize: 16, color: Colors.white),),
-                                                          Text("Mission", style: TextStyle(fontSize: 15, color: Colors.white),),
+                                                          Text("Trees by 2030", style: TextStyle(fontSize: 12, color: Colors.white),),
                                                         ],
                                                       )
                                                   ),

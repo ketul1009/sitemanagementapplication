@@ -3,8 +3,11 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter/services.dart';
 import 'package:multiselect/multiselect.dart';
+import 'package:second_draft/AppPages/Water%20Usage/WaterUsage.dart';
+import 'package:second_draft/Common/CustomDrawer.dart';
+import '../../Common/ExcelMaker.dart';
 import '../../Models/WaterUsageRecord.dart';
-import '../LoginPage.dart';
+import 'package:second_draft/main.dart';
 
 class RecordPage extends StatefulWidget {
   const RecordPage({super.key});
@@ -21,14 +24,14 @@ class _RecordPageState extends State<RecordPage> {
   bool drawerOpen = false;
   DataTableSource _data = RecordData([]);
   bool _sortAscending = true;
-  Set<String> companies = {'All'};
-  Set<String> locations = {'All'};
-  Set<String> weathers = {'All'};
-  List<String> selectedCompanies = [];
-  List<String> selectedLocations = [];
-  List<String> selectedWeathers = [];
+  Set<String> business = {'All'};
+  Set<String> subBusiness = {'All'};
+  Set<String> location = {'All'};
+  List<String> selectedBusiness = [];
+  List<String> selectedSubBusiness = [];
+  List<String> selectedLocation = [];
 
-  Future<void> fetchDocuments() async {
+  Future<void> _fetchDocuments() async {
     setState(() {
       isLoading=true;
     });
@@ -45,20 +48,27 @@ class _RecordPageState extends State<RecordPage> {
         final data = jsonDecode(response.body);
         for (var value in data['Items']){
           var temp = value;
-          companies.add(temp['company']);
-          locations.add(temp['location']);
-          weathers.add(temp['weather']);
+          business.add(temp['business']);
+          subBusiness.add(temp['subBusiness']);
+          location.add(temp['location']);
           documents.add(
               WaterUsageRecord(
                   temp['userId'],
-                  temp['company'],
-                  temp['date'],
+                  temp['recordId'],
+                  temp['time'].substring(0, 11),
+                  temp['business'],
+                  temp['subBusiness'],
                   temp['location'],
+                  temp['date'],
+                  temp['area'],
                   temp['weather'],
-                  temp['waterUsage'])
+                  temp['waterUsage']
+              ),
           );
         }
-
+        documents.sort((a, b) {
+          return Comparable.compare(b.time, a.time);
+        });
         setState(() {
           _documents=documents;
         });
@@ -66,7 +76,7 @@ class _RecordPageState extends State<RecordPage> {
       else {
       }
     } catch (e) {
-
+      debugPrint(e.toString());
     }
     setState(() {
       isLoading=false;
@@ -74,7 +84,60 @@ class _RecordPageState extends State<RecordPage> {
     });
   }
 
-  void _sortData(int columnIndex, bool ascending) {
+  Future<void> _fetchDocumentsAdmin() async {
+    setState(() {
+      isLoading=true;
+    });
+    final url = Uri.parse("https://gqori3shog.execute-api.ap-south-1.amazonaws.com/dev/secondDraftApi/records/admin");
+    try {
+      List<WaterUsageRecord> documents = [];
+      final response = await http.post(
+          url,
+          headers: <String, String>{'Content-Type': 'application/json'},
+          body: json.encode({'userId':user.userId})
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        for (var value in data['Items']){
+          var temp = value;
+          business.add(temp['business']);
+          subBusiness.add(temp['subBusiness']);
+          location.add(temp['location']);
+          documents.add(
+            WaterUsageRecord(
+                temp['userId'],
+                temp['recordId'],
+                temp['time'].substring(0, 11),
+                temp['business'],
+                temp['subBusiness'],
+                temp['location'],
+                temp['date'],
+                temp['area'],
+                temp['weather'],
+                temp['waterUsage']
+            ),
+          );
+        }
+        documents.sort((a, b) {
+          return Comparable.compare(b.time, a.time);
+        });
+        setState(() {
+          _documents=documents;
+        });
+      }
+      else {
+      }
+    } catch (e) {
+      debugPrint(e.toString());
+    }
+    setState(() {
+      isLoading=false;
+      _data=RecordData(_documents);
+    });
+  }
+
+  /*void _sortData(int columnIndex, bool ascending) {
     setState(() {
       _sortAscending = ascending;
 
@@ -91,33 +154,56 @@ class _RecordPageState extends State<RecordPage> {
       });
     });
   }
-
-  List<WaterUsageRecord> filterData(List<String> selectedCompanies, List<String> selectedLocations, List<String> selectedWeathers) {
-    setState(() {
-    });
+  */
+  List<WaterUsageRecord> filterData(List<String> selectedBusiness, List<String> selectedSubBusiness, List<String> selectedLocation) {
     return _documents.where((data) {
-      final companyMatch = selectedCompanies.contains(data.company) || selectedCompanies.contains("All");
-      final locationMatch = selectedLocations.contains(data.location) || selectedLocations.contains("All");
-      final weatherMatch = selectedWeathers.contains(data.weather) || selectedWeathers.contains("All");
-      return companyMatch && locationMatch && weatherMatch;
+      final businessMatch = selectedBusiness.contains(data.business) || selectedBusiness.contains("All");
+      final subBusinessMatch = selectedSubBusiness.contains(data.subBusiness) || selectedSubBusiness.contains("All");
+      final locationMatch = selectedLocation.contains(data.location) || selectedLocation.contains("All");
+      return businessMatch && subBusinessMatch && locationMatch;
     }).toList();
   }
 
   dynamic _getValue(WaterUsageRecord document, int columnIndex) {
     switch (columnIndex) {
       case 0:
-        return document.company;
-      case 1:
         return document.date;
+      case 1:
+        return document.business;
       case 2:
-        return document.location;
+        return document.subBusiness;
       case 3:
-        return document.weather;
+        return document.location;
       case 4:
         return document.waterUsage;
       default:
         return null;
     }
+  }
+
+  List<List<dynamic>> _createList(List<WaterUsageRecord> input) {
+    final List<List<dynamic>> data = [
+      [
+        'Date',
+        'Business',
+        'SubBusiness',
+        'Location',
+        'Area',
+        'WaterUsage'
+      ]
+    ];
+
+    for(var temp in input){
+      List<String> row = [
+        temp.date,
+        temp.business,
+        temp.subBusiness,
+        temp.location,
+        temp.waterUsage
+      ];
+      data.add(row);
+    }
+    return data;
   }
 
   @override
@@ -141,7 +227,12 @@ class _RecordPageState extends State<RecordPage> {
       ],
     );
 
-    fetchDocuments();
+    if(user.role=="admin"){
+      _fetchDocumentsAdmin();
+    }
+    else{
+      _fetchDocuments();
+    }
   }
 
   @override
@@ -165,7 +256,7 @@ class _RecordPageState extends State<RecordPage> {
           key: _scaffoldKey,
           appBar: AppBar(
             leading: IconButton(
-              icon: const Icon(Icons.menu, size: 30, color: Colors.black),
+              icon: const Icon(Icons.menu, size: 50, color: Colors.black),
               onPressed: () {
                 setState(() {
                   drawerOpen=true;
@@ -173,182 +264,222 @@ class _RecordPageState extends State<RecordPage> {
                 _scaffoldKey.currentState?.openDrawer();
               },
             ),
+            actions: [
+              PopupMenuButton(
+                  icon: const Icon(Icons.more_vert, color: Colors.black, size: 30,),
+                  itemBuilder: (context){
+                    return [
+                      const PopupMenuItem<int>(
+                        value: 0,
+                        child: Text("Refresh"),
+                      ),
+                      const PopupMenuItem<int>(
+                        value: 1,
+                        child: Text("Export to Excel"),
+                      ),
+                    ];
+                  },
+                  onSelected:(value) {
+                    if (value == 0) {
+                      if(user.role=="admin"){
+                        _fetchDocumentsAdmin();
+                      }
+                      else{
+                        _fetchDocuments();
+                      }
+                    }
+                    else if(value == 1){
+                      exportExcel(context, _createList(_documents));
+                    }
+                  }
+              ),
+            ],
             elevation: 2,
             backgroundColor: Colors.white,
           ),
           drawer: Drawer(
-            // Add your menu items inside the Drawer
-            child: Column(
-              children: [
-                Container(
-                  height: 120,
-                  width: double.infinity,
-                  color: Colors.blue,
-                  alignment: Alignment.bottomCenter,
-                  padding: const EdgeInsets.all(20),
-                  child: const Text("Welcome", style: TextStyle(fontSize: 20),),
+          // Add your menu items inside the Drawer
+          width: 400,
+          child: Column(
+            children: [
+              Container(
+                height: 120,
+                width: double.infinity,
+                color: Colors.blue,
+                alignment: Alignment.bottomCenter,
+                padding: const EdgeInsets.all(20),
+                child: const Text("Welcome", style: TextStyle(fontSize: 20),),
+              ),
+              Container(
+                alignment: Alignment.center,
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  children: [
+                    const Text('Select Business', style: TextStyle(fontSize: 15, color: Colors.black),),
+                    Container(height: 10,),
+                    DropDownMultiSelect(
+                        options: business.toList(),
+                        selectedValues: selectedBusiness,
+                        onChanged: (value){
+                          setState(() {
+                            if(value.contains('All')){
+                              selectedBusiness=business.toList();
+                            }
+                            selectedBusiness = value;
+                          });
+                        }
+                    )
+                  ],
                 ),
-                Container(
-                  alignment: Alignment.center,
-                  padding: const EdgeInsets.all(20),
-                  child: Column(
-                    children: [
-                      const Text('Select Airport', style: TextStyle(fontSize: 20, color: Colors.black),),
-                      Container(height: 10,),
-                      DropDownMultiSelect(
-                          options: companies.toList(),
-                          selectedValues: selectedCompanies,
-                          onChanged: (value){
-                            setState(() {
-                              if(value.contains('All')){
-                                selectedCompanies=companies.toList();
-                              }
-                              selectedCompanies = value;
-                            });
-                          }
-                      )
-                    ],
-                  ),
+              ),
+              Container(
+                alignment: Alignment.center,
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  children: [
+                    const Text('Select Sub-Business', style: TextStyle(fontSize: 15, color: Colors.black),),
+                    Container(height: 10,),
+                    DropDownMultiSelect(
+                        options: subBusiness.toList(),
+                        selectedValues: selectedSubBusiness,
+                        onChanged: (value){
+                          setState(() {
+                            if(value.contains('All')){
+                              selectedSubBusiness=subBusiness.toList();
+                            }
+                            selectedSubBusiness = value;
+                          });
+                        }
+                    )
+                  ],
                 ),
-                Container(
-                  alignment: Alignment.center,
-                  padding: const EdgeInsets.all(20),
-                  child: Column(
-                    children: [
-                      const Text('Select Location', style: TextStyle(fontSize: 20, color: Colors.black),),
-                      Container(height: 10,),
-                      DropDownMultiSelect(
-                          options: locations.toList(),
-                          selectedValues: selectedLocations,
-                          onChanged: (value){
-                            setState(() {
-                              if(value.contains('All')){
-                                selectedLocations=locations.toList();
-                              }
-                              selectedLocations = value;
-                            });
-                          }
-                      )
-                    ],
-                  ),
+              ),
+              Container(
+                alignment: Alignment.center,
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  children: [
+                    const Text('Select Location', style: TextStyle(fontSize: 15, color: Colors.black),),
+                    Container(height: 10,),
+                    DropDownMultiSelect(
+                        options: location.toList(),
+                        selectedValues: selectedLocation,
+                        onChanged: (value){
+                          setState(() {
+                            if(value.contains('All')){
+                              selectedLocation=location.toList();
+                            }
+                            selectedLocation = value;
+                          });
+                        }
+                    )
+                  ],
                 ),
-                Container(
-                  alignment: Alignment.center,
-                  padding: const EdgeInsets.all(20),
-                  child: Column(
-                    children: [
-                      const Text('Select Weather', style: TextStyle(fontSize: 20, color: Colors.black),),
-                      Container(height: 10,),
-                      DropDownMultiSelect(
-                          options: weathers.toList(),
-                          selectedValues: selectedWeathers,
-                          onChanged: (value){
-                            setState(() {
-                              if(value.contains('All')){
-                                selectedWeathers=weathers.toList();
-                              }
-                              selectedWeathers = value;
-                            });
-                          }
-                      )
-                    ],
-                  ),
+              ),
+              Container(
+                alignment: Alignment.center,
+                padding: const EdgeInsets.all(20),
+                child: ElevatedButton(
+                  child: const Text("Submit"),
+                  onPressed: (){
+                    setState(() {
+                      _data=RecordData(filterData(selectedBusiness, selectedSubBusiness, selectedLocation));
+                    });
+                    _scaffoldKey.currentState?.closeDrawer();
+                  },
                 ),
-                Container(
-                  alignment: Alignment.center,
-                  padding: const EdgeInsets.all(20),
-                  child: ElevatedButton(
-                    child: const Text("Submit"),
-                    onPressed: (){
-                      setState(() {
-                        _data=RecordData(filterData(selectedCompanies, selectedLocations, selectedWeathers));
-                      });
-                      _scaffoldKey.currentState?.closeDrawer();
-                    },
-                  ),
-                )
-              ],
-            ),
+              )
+            ],
           ),
+        ),
           body: SingleChildScrollView(
               child: Column(
                   mainAxisAlignment: MainAxisAlignment.start,
                   children: <Widget>[
                     Container(height: 10,),
                     ElevatedButton(
-                                onPressed: (){
-                                  fetchDocuments();
-                                },
-                                style: const ButtonStyle(),
-                                child: SizedBox(
-                                    width: 150,
-                                    child: Row(
-                                        mainAxisAlignment: MainAxisAlignment.center,
-                                        children: [
-                                          const Text('Get Records', style: TextStyle(fontSize: 16 , color: Colors.black),),
-                                          const Icon(Icons.autorenew_rounded, color: Colors.black,),
-                                        ])
-                                ),
-                              ),
+                       onPressed: (){
+                          Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (context) => const WaterUsage()
+                              )
+                          );
+                       },
+                       style: const ButtonStyle(),
+                       child: SizedBox(
+                           width: 150,
+                           child: Row(
+                               mainAxisAlignment: MainAxisAlignment.center,
+                               children: const [
+                                 Text('New Record', style: TextStyle(fontSize: 16 , color: Colors.black),),
+                                 Icon(Icons.add, color: Colors.black,),
+                               ]
+                           )
+                       ),
+                    ),
                     Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: <Widget>[
-                                  if(isLoading)
-                                    const CircularProgressIndicator()
-                                ],
-                              ),
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: <Widget>[
+                        if(isLoading)
+                          const CircularProgressIndicator()
+                      ],
+                    ),
                     PaginatedDataTable(
-                                      columns: [
-                                        DataColumn(
-                                          label: const Text('Company'),
-                                          onSort: (columnIndex, ascending){
-                                            setState(() {
-                                              _sortAscending=!_sortAscending;
-                                            });
-                                            _sortData(0, _sortAscending);
-                                          }
-                                        ),
-                                        DataColumn(
-                                          label: const Text('Date'),
-                                          onSort: (columnIndex, ascending){
-                                            setState(() {
-                                              _sortAscending=!_sortAscending;
-                                            });
-                                            _sortData(1, _sortAscending);
-                                          }
-                                        ),
-                                        DataColumn(
-                                          label: const Text('Location'),
-                                          onSort: (columnIndex, ascending){
-                                            setState(() {
-                                              _sortAscending=!_sortAscending;
-                                            });
-                                            _sortData(2, _sortAscending);
-                                          }
-                                        ),
-                                        DataColumn(
-                                          label: const Text('Weather'),
-                                          onSort: (columnIndex, ascending){
-                                            setState(() {
-                                              _sortAscending=!_sortAscending;
-                                            });
-                                            _sortData(3, _sortAscending);
-                                          }
-                                        ),
-                                        DataColumn(
-                                          label: const Text('Water Usage'),
-                                          onSort: (columnIndex, ascending){
-                                            setState(() {
-                                              _sortAscending=!_sortAscending;
-                                            });
-                                            _sortData(4, _sortAscending);
-                                          }
-                                        ),
-                                      ],
-                                      source: _data,
-                                    )
+                      columns: [
+                        DataColumn(
+                            label: const Text('Sr. No' , style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
+                            onSort: (columnIndex, ascending){
+                              setState(() {
+                                _sortAscending=!_sortAscending;
+                              });
+                            }
+                        ),
+                        DataColumn(
+                            label: const Text('Submitted On' , style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
+                            onSort: (columnIndex, ascending){
+                              setState(() {
+                                _sortAscending=!_sortAscending;
+                              });
+                            }
+                        ),
+                        DataColumn(
+                          label: const Text('Business', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
+                            onSort: (columnIndex, ascending){
+                              setState(() {
+                                _sortAscending=!_sortAscending;
+                              });
+                            }
+                        ),
+                        DataColumn(
+                          label: const Text('Sub-Business', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
+                            onSort: (columnIndex, ascending){
+                              setState(() {
+                                _sortAscending=!_sortAscending;
+                              });
+                            }
+                        ),
+                        DataColumn(
+                          label: const Text('Location', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
+                            onSort: (columnIndex, ascending){
+                              setState(() {
+                                _sortAscending=!_sortAscending;
+                              });
+                            }
+                        ),
+                        DataColumn(
+                          label: const Text('Water Usage', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
+                            onSort: (columnIndex, ascending){
+                              setState(() {
+                                _sortAscending=!_sortAscending;
+                              });
+                            }
+                        ),
+                      ],
+                      source: _data,
+                    )
                   ]
-          )
+              )
           ),
         ),
     );
@@ -368,25 +499,29 @@ class _RecordPageState extends State<RecordPage> {
 
 class RecordData extends DataTableSource{
 
+  int serialNo=1;
+
   List<Map<String, dynamic>> _data = List.generate(
       1,
           (index) => {
-        "Company": "Company",
-        "Date": "Date",
-        "Location": "Location",
-        "Weather":"Weather",
-        "Water Usage": "Water Usage"
+        "Sr. No" : "Sr. No",
+        "SubmittedOn": "Submitted On",
+        "Business": "Business",
+        "SubBusiness": "Sub-Business",
+        "Location" : "Location",
+        "WaterUsage": "Water Usage"
       });
 
   RecordData(List<WaterUsageRecord> temp){
     _data = List.generate(
         temp.length,
             (index) => {
-          "Company": temp[index].company,
-          "Date": temp[index].date,
+          "Sr. No" : (serialNo++).toString(),
+          "SubmittedOn": temp[index].time,
+          "Business": temp[index].business,
+          "SubBusiness": temp[index].subBusiness,
           "Location": temp[index].location,
-          "Weather": temp[index].weather,
-          "Water Usage": temp[index].waterUsage
+          "WaterUsage": temp[index].waterUsage
         });
   }
 
@@ -399,11 +534,12 @@ class RecordData extends DataTableSource{
   @override
   DataRow getRow(int index) {
     return DataRow(cells: [
-      DataCell(Text(_data[index]["Company"])),
-      DataCell(Text(_data[index]['Date'].toString())),
+      DataCell(Text(_data[index]["Sr. No"])),
+      DataCell(Text(_data[index]["SubmittedOn"])),
+      DataCell(Text(_data[index]["Business"])),
+      DataCell(Text(_data[index]["SubBusiness"])),
       DataCell(Text(_data[index]["Location"])),
-      DataCell(Text(_data[index]['Weather'])),
-      DataCell(Text(_data[index]["Water Usage"].toString())),
+      DataCell(Text(_data[index]["WaterUsage"].toString())),
     ]);
   }
 }
